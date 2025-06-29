@@ -589,7 +589,7 @@ enterVoiceModeButton.addEventListener('click', async () => {
 
     setUIMode('voiceIdle');
     startConversationButton.disabled = true; // Disable button before speaking
-    const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?"; // Greeting is always in German based on previous code
+    const greeting = "Hallo! Wie kann ich Ihnen helfen?"; // Greeting is always in German based on previous code
     const apiKeyToUse = languageSelect.value.startsWith('ar') || languageSelect.value.startsWith('ru') || languageSelect.value.startsWith('uk-UA')
                                 ? ELEVENLABS_API_KEY_ARABIC
                                 : ELEVENLABS_API_KEY_DEFAULT;
@@ -645,5 +645,5 @@ if (SpeechRecognition) {
 setUIMode('text');
 
 // --- Initial Greeting Message (Text Mode) ---
-const initialGreeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
+const initialGreeting = "Hallo! Wie kann ich Ihnen helfen?";
 addMessageToChat(initialGreeting, 'bot');
