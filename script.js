@@ -1,5 +1,5 @@
 // --- Configuration ---
-const N8N_WEBHOOK_URL = 'https://regular-sailfish-80.rshare.io/webhook/08f3acc1-2ec8-4bac-ba4c-3225a8e87662';
+const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/08f3acc1-2ec8-4bac-ba4c-3225a8e87662';
 const ELEVENLABS_API_KEY_DEFAULT = 'sk_5e09e402f42983acfb8e8b813b487a516485c9f4b392926a'; // Default key (German, English, Turkish)
 const ELEVENLABS_API_KEY_ARABIC = 'sk_fae445a502bdf9d6721db1253e41b2ced35028c85b333e0b'; // Arabic-specific key
 const ELEVENLABS_VOICE_ID_DEFAULT = 'kaGxVtjLwllv1bi2GFag'; // Default German Voice ID
