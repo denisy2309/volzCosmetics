@@ -67,6 +67,35 @@ const statusTexts = {
     }
 };
 
+// --- Vapi Integration ---
+let vapi;
+
+function initVapi() {
+  vapi = window.vapiSDK.run({
+    apiKey: "31bcbc02-b477-4319-af52-5bfdad57ee45",    // <-- einsetzen
+    assistant: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6",  // <-- einsetzen
+    config: {}
+  });
+
+  // Wenn Nutzer spricht -> Text kommt als Transcript
+  vapi.on("message", async (msg) => {
+    if (msg.transcript) {
+      console.log("User sagte (Vapi):", msg.transcript);
+      await handleSend(msg.transcript, true);
+    }
+  });
+}
+
+// Init Vapi sobald SDK geladen ist
+window.onload = () => {
+  const check = setInterval(() => {
+    if (window.vapiSDK) {
+      clearInterval(check);
+      initVapi();
+    }
+  }, 200);
+};
+
 
 // --- State Variables ---
 let currentMode = 'text';
@@ -330,40 +359,8 @@ async function handleSend(text, isFromVoice = false) {
         if (!isFromVoice) {
             addMessageToChat(botResponseText, 'bot');
         } else {
-            // Determine API Key based on language
-            const selectedLang = languageSelect.value;
-            const apiKeyToUse = (selectedLang.startsWith('ar') || selectedLang.startsWith('ru') || selectedLang.startsWith('uk-UA'))
-                                ? ELEVENLABS_API_KEY_ARABIC
-                                : ELEVENLABS_API_KEY_DEFAULT;
-
-            if (apiKeyToUse) {
-                 try {
-                     await speakText(botResponseText, apiKeyToUse); // Pass API key to speakText
-                     if (currentMode === 'voiceActive') {
-                         console.log("TTS finished, enabling restart flag.");
-                         allowRecognitionRestart = true;
-                         if (!isRecognizing) {
-                             console.log("Recognition already ended, manually triggering onend for restart check.");
-                             recognition.onend();
-                         }
-                     }
-                 } catch (ttsError) {
-                     console.error("TTS Error occurred:", ttsError);
-                     if (currentMode === 'voiceActive') {
-                         allowRecognitionRestart = false;
-                         statusElement.textContent = 'TTS Fehler. Klicken zum Beenden/Neustarten.';
-                         statusElement.className = 'error';
-                         voiceStatusDisplay.className = 'error';
-                     }
-                 }
-            } else {
-                console.warn('ElevenLabs API Key not set for this language. Skipping TTS.');
-                if (currentMode === 'voiceActive') {
-                     allowRecognitionRestart = true;
-                     if (!isRecognizing) { recognition.onend(); }
-                }
-            }
-        }
+            await vapi.speak(botResponseText);
+        }    
     } catch (error) {
         console.error('Error sending/receiving message:', error);
         if (!isFromVoice) {
@@ -615,20 +612,11 @@ enterVoiceModeButton.addEventListener('click', async () => {
 });
 
 startConversationButton.addEventListener('click', () => {
-    if (!recognition || currentMode !== 'voiceIdle') return;
-    setUIMode('voiceActive');
-    console.log("Green button clicked, starting recognition for user's first turn...");
-    startRecognition();
+    if (vapi) vapi.startListening();
 });
 
 stopConversationButton.addEventListener('click', () => {
-    if (currentMode !== 'voiceActive') return;
-    console.log("Stop conversation button clicked");
-    allowRecognitionRestart = false;
-    // Set mode to voiceIdle *before* stopping recognition to avoid race condition with onerror
-    setUIMode('voiceIdle');
-    stopCurrentSpeech(); // Stop TTS if playing or pending
-    stopRecognition(); // Stop STT if active (onerror check will now see 'voiceIdle')
+    if (vapi) vapi.stopListening();
 });
 
 backToTextButton.addEventListener('click', () => {
