@@ -74,6 +74,7 @@ function initVapi() {
     assistant: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6",  // <-- einsetzen
     config: {showButton: false}
   });
+  console.log("Vapi instance initialized:", vapi); // Log the Vapi instance
 
   // Wenn Nutzer spricht -> Text kommt als Transcript
   vapi.on("message", async (msg) => {
@@ -151,6 +152,7 @@ function initVapi() {
 // Init Vapi sobald SDK geladen ist
 window.onload = () => {
   const check = setInterval(() => {
+    console.log("Checking for window.vapiSDK...", window.vapiSDK); // Added log
     if (window.vapiSDK) {
       clearInterval(check);
       initVapi();
