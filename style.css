@@ -595,3 +595,9 @@ body.voice-mode-active #input-area {
         font-size: 3rem; /* Smaller icons */
     }
 }
+
+/* Hide Vapi's default button if it appears */
+.vapi-button,
+.vapi-call-button { /* Common Vapi button classes */
+    display: none !important;
+}
