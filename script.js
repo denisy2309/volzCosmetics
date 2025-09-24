@@ -72,7 +72,7 @@ function initVapi() {
   vapi = window.vapiSDK.run({
     apiKey: "31bcbc02-b477-4319-af52-5bfdad57ee45",    // <-- einsetzen
     assistant: {
-      id: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6", // Use the existing assistant ID for Vapi's internal configuration
+      // id: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6", // Removed as per Vapi error: "assistant.property id should not exist"
       response: {
         model: {
           provider: "webhook",
