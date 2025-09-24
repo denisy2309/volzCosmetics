@@ -306,15 +306,15 @@ enterVoiceModeButton.addEventListener('click', () => {
 
 
 startConversationButton.addEventListener('click', () => {
-    if (vapi) vapi.startListening();
+    if (vapi) vapi.start(); // Use vapi.start() to initiate the full Vapi call
 });
 
 stopConversationButton.addEventListener('click', () => {
-    if (vapi) vapi.stopListening();
+    if (vapi) vapi.stop(); // Use vapi.stop() to terminate the full Vapi call
 });
 
 backToTextButton.addEventListener('click', () => {
-    if (vapi) vapi.stopListening();
+    if (vapi) vapi.stop(); // Ensure call is stopped when going back to text mode
     setUIMode('text');
 });
 
