@@ -82,6 +82,70 @@ function initVapi() {
       await handleSend(msg.transcript, true);
     }
   });
+
+  vapi.on("call-start", () => {
+    console.log("Vapi Call Started");
+    setUIMode('voiceActive');
+    const selectedLang = languageSelect.value;
+    statusTextIdle.textContent = '';
+    statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening;
+    voiceStatusDisplay.className = 'listening';
+  });
+
+  vapi.on("call-end", () => {
+    console.log("Vapi Call Ended");
+    setUIMode('voiceIdle'); // Go back to idle after call ends
+  });
+
+  vapi.on("listening-start", () => {
+    console.log("Vapi Listening Started");
+    const selectedLang = languageSelect.value;
+    statusTextIdle.textContent = '';
+    statusTextThinking.textContent = '';
+    statusTextSpeaking.textContent = '';
+    statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening;
+    voiceStatusDisplay.className = 'listening';
+  });
+
+  vapi.on("listening-stop", () => {
+    console.log("Vapi Listening Stopped");
+    // When listening stops, it usually means user finished speaking or conversation ended.
+    // We might transition to thinking or idle depending on context.
+    // For now, clear listening status. Thinking status will be set by handleSend.
+    statusTextListening.textContent = '';
+    // If not in thinking state, go to idle
+    if (voiceStatusDisplay.className !== 'thinking') {
+        const selectedLang = languageSelect.value;
+        statusTextIdle.textContent = statusTexts[selectedLang]?.idle || statusTexts['de-DE'].idle;
+        voiceStatusDisplay.className = 'idle';
+    }
+  });
+
+  vapi.on("speech-start", () => {
+    console.log("Vapi Speech Started (Bot)");
+    const selectedLang = languageSelect.value;
+    statusTextListening.textContent = '';
+    statusTextThinking.textContent = '';
+    statusTextSpeaking.textContent = statusTexts[selectedLang]?.speaking || statusTexts['de-DE'].speaking;
+    voiceStatusDisplay.className = 'speaking';
+  });
+
+  vapi.on("speech-end", () => {
+    console.log("Vapi Speech Ended (Bot)");
+    // After bot speaks, it should go back to listening for user input
+    const selectedLang = languageSelect.value;
+    statusTextSpeaking.textContent = '';
+    statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening;
+    voiceStatusDisplay.className = 'listening';
+  });
+
+  vapi.on("error", (e) => {
+    console.error("Vapi Error:", e);
+    statusElement.textContent = `Vapi Fehler: ${e.message}.`;
+    statusElement.className = 'error';
+    voiceStatusDisplay.className = 'error';
+    setUIMode('voiceIdle'); // Revert to idle on error
+  });
 }
 
 // Init Vapi sobald SDK geladen ist
@@ -98,8 +162,6 @@ window.onload = () => {
 // --- State Variables ---
 let currentMode = 'text';
 let typingIndicatorElement = null;
-
-
 
 
 // --- Core Functions ---
@@ -149,7 +211,6 @@ async function handleSend(text, isFromVoice = false) {
         statusElement.textContent = ''; // Clear general status
         voiceStatusDisplay.className = 'thinking';
         console.log("Set voiceStatusDisplay class to: thinking");
-        allowRecognitionRestart = false;
     }
 
     try {
@@ -179,7 +240,6 @@ async function handleSend(text, isFromVoice = false) {
              showTypingIndicator(false);
             addMessageToChat(`Fehler: ${error.message}`, 'bot');
         } else {
-             allowRecognitionRestart = false;
              statusElement.textContent = `n8n Fehler: ${error.message}. Klicken zum Beenden/Neustarten.`;
              statusElement.className = 'error';
              voiceStatusDisplay.className = 'error';
@@ -209,7 +269,6 @@ function setUIMode(newMode) {
         case 'text':
             document.body.classList.add('text-mode');
             // Stops are handled by the button listeners triggering this mode change
-            allowRecognitionRestart = false; isRecognizing = false;
             statusElement.style.display = 'none'; // General status hidden in text mode
             voiceStatusDisplay.className = '';
             break;
@@ -219,7 +278,6 @@ function setUIMode(newMode) {
             statusElement.className = '';
             voiceStatusDisplay.className = 'idle';
             // Stops are handled by the button listeners triggering this mode change
-            allowRecognitionRestart = false; isRecognizing = false;
             break;
         case 'voiceActive':
             document.body.classList.add('voice-mode-active');
