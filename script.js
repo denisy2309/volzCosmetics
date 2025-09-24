@@ -71,33 +71,15 @@ let vapi;
 function initVapi() {
   vapi = window.vapiSDK.run({
     apiKey: "31bcbc02-b477-4319-af52-5bfdad57ee45",    // <-- einsetzen
-    assistant: {
-      // id: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6", // Removed as per Vapi error: "assistant.property id should not exist"
-      response: {
-        model: {
-          provider: "webhook",
-          url: N8N_WEBHOOK_URL // Vapi will send transcripts to this webhook and speak the response
-        }
-      }
-    },
+    assistant: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6",  // <-- einsetzen
     config: {showButton: false}
   });
 
   // Wenn Nutzer spricht -> Text kommt als Transcript
   vapi.on("message", async (msg) => {
-    if (msg.type === 'transcript' && msg.transcript) {
+    if (msg.transcript) {
       console.log("User sagte (Vapi):", msg.transcript);
-      addMessageToChat(msg.transcript, 'user'); // Display user's spoken message
-      // No need to call handleSend here for voice, Vapi handles sending to webhook
-    } else if (msg.type === 'assistant-response' && msg.message.content) {
-      console.log("Assistent antwortete (Vapi via n8n):", msg.message.content);
-      addMessageToChat(msg.message.content, 'bot'); // Display bot's spoken message
-      // Update UI from thinking to listening after bot response
-      const selectedLang = languageSelect.value;
-      statusTextThinking.textContent = '';
-      statusTextSpeaking.textContent = '';
-      statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening;
-      voiceStatusDisplay.className = 'listening';
+      await handleSend(msg.transcript, true);
     }
   });
 
@@ -213,38 +195,56 @@ function showTypingIndicator(show) {
 async function handleSend(text, isFromVoice = false) {
     if (!text.trim()) return;
 
-    if (!isFromVoice) { // Only handle text input here
+    if (!isFromVoice) {
         addMessageToChat(text, 'user');
         textInput.value = '';
         // Remove inline height style to allow CSS/rows attribute to reset height
         textInput.style.removeProperty('height');
         textInput.style.height = 'auto';
         showTypingIndicator(true);
+    } else {
+        const selectedLang = languageSelect.value;
+        statusTextListening.textContent = ''; // Clear listening text
+        statusTextThinking.textContent = statusTexts[selectedLang]?.thinking || statusTexts['de-DE'].thinking; // Set thinking text based on language
+        statusTextSpeaking.textContent = ''; // Clear speaking text
+        statusTextIdle.textContent = ''; // Clear idle text
+        statusElement.textContent = ''; // Clear general status
+        voiceStatusDisplay.className = 'thinking';
+        console.log("Set voiceStatusDisplay class to: thinking");
+    }
 
-        try {
-            console.log(`Sending to n8n (text):`, text);
-            const response = await fetch(N8N_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chatInput: text, sessionId: sessionId }),
-            });
+    try {
+        console.log(`Sending to n8n (${isFromVoice ? 'voice' : 'text'}):`, text);
+        const response = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatInput: text, sessionId: sessionId }),
+        });
 
-            showTypingIndicator(false);
+        if (!isFromVoice) { showTypingIndicator(false); }
 
-            if (!response.ok) { throw new Error(`n8n request failed with status ${response.status}`); }
-            const result = await response.json();
-            const botResponseText = result.output;
-            if (!botResponseText) { throw new Error('n8n response did not contain an "output" field.'); }
-            console.log('Received from n8n:', botResponseText);
+        if (!response.ok) { throw new Error(`n8n request failed with status ${response.status}`); }
+        const result = await response.json();
+        const botResponseText = result.output;
+        if (!botResponseText) { throw new Error('n8n response did not contain an "output" field.'); }
+        console.log('Received from n8n:', botResponseText);
+
+        if (!isFromVoice) {
             addMessageToChat(botResponseText, 'bot');
-        } catch (error) {
-            console.error('Error sending/receiving message:', error);
-            showTypingIndicator(false);
+        } else {
+            await vapi.speak(botResponseText);
+        }    
+    } catch (error) {
+        console.error('Error sending/receiving message:', error);
+        if (!isFromVoice) {
+             showTypingIndicator(false);
             addMessageToChat(`Fehler: ${error.message}`, 'bot');
+        } else {
+             statusElement.textContent = `n8n Fehler: ${error.message}. Klicken zum Beenden/Neustarten.`;
+             statusElement.className = 'error';
+             voiceStatusDisplay.className = 'error';
         }
     }
-    // For voice input, Vapi now handles sending to n8n and speaking the response internally.
-    // The 'message' event listener in initVapi will handle displaying user/bot messages.
 }
 
 
