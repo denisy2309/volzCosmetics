@@ -598,6 +598,16 @@ body.voice-mode-active #input-area {
 
 /* Hide Vapi's default button if it appears */
 .vapi-button,
-.vapi-call-button { /* Common Vapi button classes */
+.vapi-call-button,
+vapi-button, /* Target custom element if Vapi uses one */
+vapi-call-button, /* Target custom element if Vapi uses one */
+.vapi-root, /* Often a root element for Vapi's UI */
+.vapi-container, /* Another common container class */
+.vapi-widget { /* If it's a widget */
     display: none !important;
+    visibility: hidden !important; /* More aggressive hiding */
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important; /* Prevent interaction */
 }

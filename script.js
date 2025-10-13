@@ -71,16 +71,34 @@ let vapi;
 function initVapi() {
   vapi = window.vapiSDK.run({
     apiKey: "31bcbc02-b477-4319-af52-5bfdad57ee45",    // <-- einsetzen
-    assistant: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6",  // <-- einsetzen
+    assistant: {
+      // id: "d2b23550-4ba2-43d1-bdb8-38fa43ce25d6", // Removed as per Vapi error: "assistant.property id should not exist"
+      response: {
+        model: {
+          provider: "webhook",
+          url: N8N_WEBHOOK_URL // Vapi will send transcripts to this webhook and speak the response
+        }
+      }
+    },
     config: {showButton: false}
   });
   console.log("Vapi instance initialized:", vapi); // Log the Vapi instance
 
   // Wenn Nutzer spricht -> Text kommt als Transcript
   vapi.on("message", async (msg) => {
-    if (msg.transcript) {
+    if (msg.type === 'transcript' && msg.transcript) {
       console.log("User sagte (Vapi):", msg.transcript);
-      await handleSend(msg.transcript, true);
+      addMessageToChat(msg.transcript, 'user'); // Display user's spoken message
+      // No need to call handleSend here for voice, Vapi handles sending to webhook
+    } else if (msg.type === 'assistant-response' && msg.message.content) {
+      console.log("Assistent antwortete (Vapi via n8n):", msg.message.content);
+      addMessageToChat(msg.message.content, 'bot'); // Display bot's spoken message
+      // Update UI from thinking to listening after bot response
+      const selectedLang = languageSelect.value;
+      statusTextThinking.textContent = '';
+      statusTextSpeaking.textContent = '';
+      statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening;
+      voiceStatusDisplay.className = 'listening';
     }
   });
 
